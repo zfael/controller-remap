@@ -3,6 +3,8 @@ use clap::Parser;
 
 pub mod app;
 pub mod domain;
+#[cfg(windows)]
+pub mod platform;
 
 #[derive(Debug, Clone, Parser)]
 pub struct Cli {
