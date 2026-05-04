@@ -1,0 +1,13 @@
+[package]
+name = "controller-remap"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+[target.'cfg(windows)'.dependencies]
+rusty-xinput = "1.3.0"
+vigem-client = "0.1.4"
