@@ -6,6 +6,7 @@ use crate::domain::{PadState, BUTTON_Y};
 pub struct MacroEngine {
     looping: bool,
     y_was_down: bool,
+    saw_disconnect: bool,
     interval: Duration,
     pulse_width: Duration,
     next_pulse_at: Option<Instant>,
@@ -16,6 +17,7 @@ impl MacroEngine {
         Self {
             looping: false,
             y_was_down: false,
+            saw_disconnect: false,
             interval,
             pulse_width,
             next_pulse_at: None,
@@ -30,12 +32,16 @@ impl MacroEngine {
         if !connected {
             self.looping = false;
             self.y_was_down = false;
+            self.saw_disconnect = true;
             self.next_pulse_at = None;
             return PadState::neutral();
         }
 
         let y_down = physical.buttons & BUTTON_Y != 0;
-        if y_down && !self.y_was_down {
+        if self.saw_disconnect {
+            self.y_was_down = y_down;
+            self.saw_disconnect = false;
+        } else if y_down && !self.y_was_down {
             self.looping = !self.looping;
             self.next_pulse_at = if self.looping { Some(now) } else { None };
         }

@@ -140,3 +140,51 @@ fn disconnect_returns_to_neutral_and_stops_looping() {
     assert_eq!(output, PadState::neutral());
     assert!(!engine.is_looping());
 }
+
+#[test]
+fn reconnect_with_y_already_held_does_not_toggle_looping() {
+    let start = Instant::now();
+    let mut engine = engine();
+
+    engine.process_frame(
+        start,
+        true,
+        PadState {
+            buttons: BUTTON_Y,
+            ..neutral()
+        },
+    );
+    assert!(engine.is_looping());
+
+    engine.process_frame(
+        start + Duration::from_millis(20),
+        false,
+        PadState {
+            buttons: BUTTON_Y,
+            ..neutral()
+        },
+    );
+    assert!(!engine.is_looping());
+
+    let reconnect_held = engine.process_frame(
+        start + Duration::from_millis(40),
+        true,
+        PadState {
+            buttons: BUTTON_Y,
+            ..neutral()
+        },
+    );
+    assert_eq!(reconnect_held.buttons & BUTTON_Y, 0);
+    assert!(!engine.is_looping());
+
+    engine.process_frame(start + Duration::from_millis(60), true, neutral());
+    engine.process_frame(
+        start + Duration::from_millis(80),
+        true,
+        PadState {
+            buttons: BUTTON_Y,
+            ..neutral()
+        },
+    );
+    assert!(engine.is_looping());
+}
