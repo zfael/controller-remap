@@ -22,7 +22,20 @@ You will need:
 - Windows 10 or 11
 - administrator rights to install drivers
 
-### 1. Build the executable
+### 1. Install Rust and Cargo
+
+1. Install Rust from <https://rustup.rs/>.
+2. Use the default installation options unless you already have a reason to customize them.
+3. Close and reopen your terminal after installation so `cargo` is available on `PATH`.
+4. Confirm the toolchain is available:
+
+```bash
+cargo --version
+```
+
+If `cargo` is not recognized, reopen the terminal and try again before continuing.
+
+### 2. Build the executable
 
 ```bash
 cargo build --release
@@ -30,7 +43,7 @@ cargo build --release
 
 The executable will be at `target\release\controller-remap.exe`. You will need that exact file path for the HidHide allow-list step.
 
-### 2. Install ViGEmBus
+### 3. Install ViGEmBus
 
 1. Download the latest official archived release from <https://github.com/nefarius/ViGEmBus/releases/latest>.
 2. Run the installer.
@@ -39,7 +52,7 @@ The executable will be at `target\release\controller-remap.exe`. You will need t
 
 The bridge creates a virtual Xbox 360 controller through ViGEmBus. If it is missing, startup will fail with `failed to connect to ViGEmBus`.
 
-### 3. Install HidHide
+### 4. Install HidHide
 
 1. Download the latest official release from <https://github.com/nefarius/HidHide/releases/latest>.
 2. Run the installer.
@@ -48,7 +61,7 @@ The bridge creates a virtual Xbox 360 controller through ViGEmBus. If it is miss
 
 > HidHide controls which applications are allowed to see hidden devices. This bridge must be allow-listed before device hiding is enabled.
 
-### 4. Allow this executable through HidHide
+### 5. Allow this executable through HidHide
 
 1. Open the **Applications** tab.
 2. Press **+**.
@@ -57,7 +70,7 @@ The bridge creates a virtual Xbox 360 controller through ViGEmBus. If it is miss
 
 If the bridge executable is not allow-listed, HidHide can hide the physical controller from the bridge too.
 
-### 5. Hide the physical controller from the target app
+### 6. Hide the physical controller from the target app
 
 1. Before continuing, make sure the physical controller is connected.
 2. Open the **Devices** tab.
@@ -72,7 +85,7 @@ After this:
 - The target app should no longer see the physical controller directly.
 - The target app should interact with the virtual controller created by ViGEmBus instead.
 
-### 6. Run the bridge
+### 7. Run the bridge
 
 ```bash
 cargo run --release -- --slot 0
@@ -80,15 +93,17 @@ cargo run --release -- --slot 0
 
 `--slot` is the XInput slot index to read from. If the controller is not detected, confirm which slot Windows assigned to the controller.
 
-### 7. Verify the setup
+### 8. Verify the setup
 
 1. Start the bridge with the physical controller connected.
 2. Confirm startup does not fail with a HidHide error.
 3. Open the target app and confirm it reacts to the virtual controller path instead of seeing both physical and virtual devices at the same time.
 4. Press physical `Y` and confirm it acts as the bridge toggle instead of appearing as a normal `Y` press in the target app.
 
-### 8. Common setup failures
+### 9. Common setup failures
 
+- `cargo` is not recognized
+  - Rust is not installed yet, or the terminal needs to be reopened after installing via `rustup`.
 - `HidHide service not found; install HidHide and whitelist this executable before running`
   - HidHide is not installed correctly, its service is unavailable, or the bridge was started before installation completed.
 - `failed to connect to ViGEmBus`
