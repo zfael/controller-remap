@@ -8,6 +8,7 @@ Windows-only controller bridge proof of concept.
 - While enabled, the virtual controller pulses `Y + LT` every 1 second.
 - Pulse width is 60 ms.
 - Physical `Y` does not pass through to the target app.
+- Physical `LT` does not pass through while the macro is enabled; the macro owns `LT` timing.
 
 ## Windows setup
 
