@@ -3,3 +3,7 @@
 /.idea
 /.vscode
 *.user
+debug
+**/*.rs.bk
+*.pdb
+**/mutants.out*/
