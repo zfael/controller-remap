@@ -17,7 +17,7 @@ impl MacroEngine {
         Self {
             looping: false,
             y_was_down: false,
-            saw_disconnect: false,
+            saw_disconnect: true,
             interval,
             pulse_width,
             next_pulse_at: None,

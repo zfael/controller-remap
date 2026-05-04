@@ -15,7 +15,7 @@ fn physical_y_toggles_looping_only_on_rising_edge() {
     let start = Instant::now();
     let mut engine = engine();
 
-    let first = engine.process_frame(
+    let initial_held = engine.process_frame(
         start,
         true,
         PadState {
@@ -23,11 +23,24 @@ fn physical_y_toggles_looping_only_on_rising_edge() {
             ..neutral()
         },
     );
+    assert!(!engine.is_looping());
+    assert_eq!(initial_held.buttons & BUTTON_Y, 0);
+
+    engine.process_frame(start + Duration::from_millis(20), true, neutral());
+
+    let first_press = engine.process_frame(
+        start + Duration::from_millis(40),
+        true,
+        PadState {
+            buttons: BUTTON_Y,
+            ..neutral()
+        },
+    );
     assert!(engine.is_looping());
-    assert_eq!(first.buttons & BUTTON_Y, BUTTON_Y);
+    assert_eq!(first_press.buttons & BUTTON_Y, BUTTON_Y);
 
     let held = engine.process_frame(
-        start + Duration::from_millis(20),
+        start + Duration::from_millis(60),
         true,
         PadState {
             buttons: BUTTON_Y,
@@ -71,8 +84,9 @@ fn looping_emits_y_and_lt_on_a_fixed_cadence() {
     let start = Instant::now();
     let mut engine = engine();
 
+    engine.process_frame(start, true, neutral());
     engine.process_frame(
-        start,
+        start + Duration::from_millis(20),
         true,
         PadState {
             buttons: BUTTON_Y,
@@ -80,15 +94,15 @@ fn looping_emits_y_and_lt_on_a_fixed_cadence() {
         },
     );
 
-    let pulse = engine.process_frame(start + Duration::from_millis(10), true, neutral());
+    let pulse = engine.process_frame(start + Duration::from_millis(30), true, neutral());
     assert_eq!(pulse.buttons & BUTTON_Y, BUTTON_Y);
     assert_eq!(pulse.left_trigger, 255);
 
-    let between = engine.process_frame(start + Duration::from_millis(100), true, neutral());
+    let between = engine.process_frame(start + Duration::from_millis(120), true, neutral());
     assert_eq!(between.buttons & BUTTON_Y, 0);
     assert_eq!(between.left_trigger, 0);
 
-    let second_pulse = engine.process_frame(start + Duration::from_millis(1010), true, neutral());
+    let second_pulse = engine.process_frame(start + Duration::from_millis(1030), true, neutral());
     assert_eq!(second_pulse.buttons & BUTTON_Y, BUTTON_Y);
     assert_eq!(second_pulse.left_trigger, 255);
 }
@@ -98,8 +112,9 @@ fn looping_keeps_other_buttons_but_lt_is_macro_owned() {
     let start = Instant::now();
     let mut engine = engine();
 
+    engine.process_frame(start, true, neutral());
     engine.process_frame(
-        start,
+        start + Duration::from_millis(20),
         true,
         PadState {
             buttons: BUTTON_Y,
@@ -126,8 +141,9 @@ fn disconnect_returns_to_neutral_and_stops_looping() {
     let start = Instant::now();
     let mut engine = engine();
 
+    engine.process_frame(start, true, neutral());
     engine.process_frame(
-        start,
+        start + Duration::from_millis(20),
         true,
         PadState {
             buttons: BUTTON_Y,
@@ -136,7 +152,7 @@ fn disconnect_returns_to_neutral_and_stops_looping() {
     );
     assert!(engine.is_looping());
 
-    let output = engine.process_frame(start + Duration::from_millis(20), false, neutral());
+    let output = engine.process_frame(start + Duration::from_millis(40), false, neutral());
     assert_eq!(output, PadState::neutral());
     assert!(!engine.is_looping());
 }
@@ -146,8 +162,9 @@ fn reconnect_with_y_already_held_does_not_toggle_looping() {
     let start = Instant::now();
     let mut engine = engine();
 
+    engine.process_frame(start, true, neutral());
     engine.process_frame(
-        start,
+        start + Duration::from_millis(20),
         true,
         PadState {
             buttons: BUTTON_Y,
@@ -157,7 +174,7 @@ fn reconnect_with_y_already_held_does_not_toggle_looping() {
     assert!(engine.is_looping());
 
     engine.process_frame(
-        start + Duration::from_millis(20),
+        start + Duration::from_millis(40),
         false,
         PadState {
             buttons: BUTTON_Y,
@@ -167,7 +184,7 @@ fn reconnect_with_y_already_held_does_not_toggle_looping() {
     assert!(!engine.is_looping());
 
     let reconnect_held = engine.process_frame(
-        start + Duration::from_millis(40),
+        start + Duration::from_millis(60),
         true,
         PadState {
             buttons: BUTTON_Y,
@@ -177,9 +194,9 @@ fn reconnect_with_y_already_held_does_not_toggle_looping() {
     assert_eq!(reconnect_held.buttons & BUTTON_Y, 0);
     assert!(!engine.is_looping());
 
-    engine.process_frame(start + Duration::from_millis(60), true, neutral());
+    engine.process_frame(start + Duration::from_millis(80), true, neutral());
     engine.process_frame(
-        start + Duration::from_millis(80),
+        start + Duration::from_millis(100),
         true,
         PadState {
             buttons: BUTTON_Y,
