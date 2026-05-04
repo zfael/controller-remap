@@ -1,6 +1,8 @@
 use std::time::{Duration, Instant};
 
-use anyhow::{bail, Result};
+#[cfg(not(windows))]
+use anyhow::bail;
+use anyhow::Result;
 
 use crate::domain::{MacroEngine, PadState};
 #[cfg(windows)]

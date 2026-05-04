@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use rusty_xinput::{XInputHandle, XInputState, XInputUsageError};
 
 use crate::app::{InputFrame, InputSource};
@@ -11,7 +11,8 @@ pub struct XInputReader {
 
 impl XInputReader {
     pub fn new(slot: u32) -> Result<Self> {
-        let handle = XInputHandle::load_default().context("failed to load XInput")?;
+        let handle =
+            XInputHandle::load_default().map_err(|err| anyhow!("failed to load XInput: {err:?}"))?;
         Ok(Self { handle, slot })
     }
 }
