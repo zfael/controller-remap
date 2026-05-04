@@ -91,14 +91,22 @@ After this:
 cargo run --release -- --slot 0
 ```
 
-`--slot` is the XInput slot index to read from. If the controller is not detected, confirm which slot Windows assigned to the controller.
+`--slot` is the XInput slot index to read from. If the controller is not detected, confirm which slot Windows assigned to the physical controller.
+
+When ViGEmBus creates the virtual Xbox 360 controller, Windows can assign that virtual device to slot `0` and move the physical controller to slot `1`. If pressing physical `Y` does not produce `macro enabled` in the bridge logs, try the next slot:
+
+```bash
+cargo run --release -- --slot 1
+```
 
 ### 8. Verify the setup
 
 1. Start the bridge with the physical controller connected.
 2. Confirm startup does not fail with a HidHide error.
-3. Open the target app and confirm it reacts to the virtual controller path instead of seeing both physical and virtual devices at the same time.
-4. Press physical `Y` and confirm it acts as the bridge toggle instead of appearing as a normal `Y` press in the target app.
+3. Confirm the bridge logs `physical controller connected` and, when you press physical `Y`, logs `macro enabled`.
+4. If physical `Y` produces no new bridge log, stop and retry with a different `--slot` value before opening the target app.
+5. Open the target app and confirm it reacts to the virtual controller path instead of seeing both physical and virtual devices at the same time.
+6. Press physical `Y` and confirm it acts as the bridge toggle instead of appearing as a normal `Y` press in the target app.
 
 ### 9. Common setup failures
 
@@ -108,6 +116,8 @@ cargo run --release -- --slot 0
   - HidHide is not installed correctly, its service is unavailable, or the bridge was started before installation completed.
 - `failed to connect to ViGEmBus`
   - ViGEmBus is missing, not active yet, or Windows still needs a reboot after installation.
+- The bridge logs `physical controller connected`, but pressing physical `Y` does nothing
+  - The selected `--slot` is likely the virtual Xbox 360 controller instead of the physical pad. Try `--slot 1` if `--slot 0` stays idle.
 - The controller is missing from the HidHide **Devices** tab
   - Reconnect the controller and disable **Gaming devices only**.
 - The bridge stops seeing the controller after hiding is enabled

@@ -3,8 +3,9 @@ use std::time::{Duration, Instant};
 #[cfg(not(windows))]
 use anyhow::bail;
 use anyhow::Result;
+use tracing::info;
 
-use crate::domain::{MacroEngine, PadState};
+use crate::domain::{MacroEngine, PadState, BUTTON_Y};
 #[cfg(windows)]
 use crate::platform::prereqs::check_prerequisites;
 #[cfg(windows)]
@@ -34,10 +35,21 @@ pub trait OutputSink {
     fn write(&mut self, state: PadState) -> Result<()>;
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BridgeEvent {
+    PhysicalControllerConnected,
+    PhysicalControllerDisconnected,
+    MacroEnabled,
+    MacroDisabled,
+    MacroPulse,
+}
+
 pub struct BridgeApp<I, O> {
     input: I,
     output: O,
     engine: MacroEngine,
+    last_connected: Option<bool>,
+    last_pulse_active: bool,
 }
 
 impl<I, O> BridgeApp<I, O>
@@ -50,13 +62,47 @@ where
             input,
             output,
             engine: MacroEngine::new(interval, pulse_width),
+            last_connected: None,
+            last_pulse_active: false,
         }
     }
 
     pub fn step(&mut self, now: Instant) -> Result<()> {
+        self.step_with_events(now).map(|_| ())
+    }
+
+    pub fn step_with_events(&mut self, now: Instant) -> Result<Vec<BridgeEvent>> {
         let frame = self.input.poll()?;
+        let was_looping = self.engine.is_looping();
         let next = self.engine.process_frame(now, frame.connected, frame.state);
-        self.output.write(next)
+        let is_looping = self.engine.is_looping();
+        let mut events = Vec::new();
+
+        if self.last_connected != Some(frame.connected) {
+            events.push(if frame.connected {
+                BridgeEvent::PhysicalControllerConnected
+            } else {
+                BridgeEvent::PhysicalControllerDisconnected
+            });
+            self.last_connected = Some(frame.connected);
+        }
+
+        if was_looping != is_looping {
+            events.push(if is_looping {
+                BridgeEvent::MacroEnabled
+            } else {
+                BridgeEvent::MacroDisabled
+            });
+        }
+
+        let pulse_active = is_looping && next.buttons & BUTTON_Y != 0 && next.left_trigger == 255;
+        if pulse_active && !self.last_pulse_active {
+            events.push(BridgeEvent::MacroPulse);
+        }
+        self.last_pulse_active = pulse_active;
+
+        self.output.write(next)?;
+        Ok(events)
     }
 
     pub fn output(&self) -> &O {
@@ -65,19 +111,23 @@ where
 }
 
 #[cfg(any(windows, test))]
-fn run_until_stopped<I, O, C, S>(
+fn run_until_stopped<I, O, C, S, E>(
     app: &mut BridgeApp<I, O>,
     mut should_continue: C,
     mut sleep: S,
+    mut on_event: E,
 ) -> Result<()>
 where
     I: InputSource,
     O: OutputSink,
     C: FnMut() -> bool,
     S: FnMut(Duration),
+    E: FnMut(BridgeEvent),
 {
     while should_continue() {
-        app.step(Instant::now())?;
+        for event in app.step_with_events(Instant::now())? {
+            on_event(event);
+        }
         sleep(Duration::from_millis(10));
     }
 
@@ -108,11 +158,29 @@ pub fn run(cli: Cli) -> Result<()> {
         signal.store(false, Ordering::SeqCst);
     })?;
 
+    info!(slot = cli.slot, "bridge started");
+
     run_until_stopped(
         &mut app,
         || running.load(Ordering::SeqCst),
         thread::sleep,
+        |event| log_bridge_event(cli.slot, event),
     )
+}
+
+#[cfg(windows)]
+fn log_bridge_event(slot: u32, event: BridgeEvent) {
+    match event {
+        BridgeEvent::PhysicalControllerConnected => {
+            info!(slot = slot, "physical controller connected")
+        }
+        BridgeEvent::PhysicalControllerDisconnected => {
+            info!(slot = slot, "physical controller disconnected")
+        }
+        BridgeEvent::MacroEnabled => info!(slot = slot, "macro enabled"),
+        BridgeEvent::MacroDisabled => info!(slot = slot, "macro disabled"),
+        BridgeEvent::MacroPulse => info!(slot = slot, "macro pulse fired"),
+    }
 }
 
 #[cfg(test)]
@@ -170,6 +238,7 @@ mod tests {
                 iterations += 1;
                 keep_running
             },
+            |_| {},
             |_| {},
         )
         .unwrap();
