@@ -2,6 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 
 pub mod app;
+pub mod domain;
 
 #[derive(Debug, Clone, Parser)]
 pub struct Cli {
